@@ -29,17 +29,18 @@ const MACHO_UNIVERSAL_MAGIC = new Set([
     0xcafebabe,
     0xbebafeca,
 ]);
-exports.detectAsarMode = async (appPath) => {
-    debug_1.d('checking asar mode of', appPath);
+const detectAsarMode = async (appPath) => {
+    (0, debug_1.d)('checking asar mode of', appPath);
     const asarPath = path.resolve(appPath, 'Contents', 'Resources', 'app.asar');
     if (!(await fs.pathExists(asarPath))) {
-        debug_1.d('determined no asar');
+        (0, debug_1.d)('determined no asar');
         return AsarMode.NO_ASAR;
     }
-    debug_1.d('determined has asar');
+    (0, debug_1.d)('determined has asar');
     return AsarMode.HAS_ASAR;
 };
-exports.generateAsarIntegrity = (asarPath) => {
+exports.detectAsarMode = detectAsarMode;
+const generateAsarIntegrity = (asarPath) => {
     return {
         algorithm: 'SHA256',
         hash: crypto
@@ -48,6 +49,7 @@ exports.generateAsarIntegrity = (asarPath) => {
             .digest('hex'),
     };
 };
+exports.generateAsarIntegrity = generateAsarIntegrity;
 function toRelativePath(file) {
     return file.replace(/^\//, '');
 }
@@ -60,8 +62,8 @@ function checkSingleArch(archive, file, allowList) {
             `allowList rule: "${allowList}"`);
     }
 }
-exports.mergeASARs = async ({ x64AsarPath, arm64AsarPath, outputAsarPath, singleArchFiles, }) => {
-    debug_1.d(`merging ${x64AsarPath} and ${arm64AsarPath}`);
+const mergeASARs = async ({ x64AsarPath, arm64AsarPath, outputAsarPath, singleArchFiles, }) => {
+    (0, debug_1.d)(`merging ${x64AsarPath} and ${arm64AsarPath}`);
     const x64Files = new Set(asar.listPackage(x64AsarPath).map(toRelativePath));
     const arm64Files = new Set(asar.listPackage(arm64AsarPath).map(toRelativePath));
     //
@@ -128,29 +130,29 @@ exports.mergeASARs = async ({ x64AsarPath, arm64AsarPath, outputAsarPath, single
     const x64Dir = await fs.mkdtemp(path.join(os.tmpdir(), 'x64-'));
     const arm64Dir = await fs.mkdtemp(path.join(os.tmpdir(), 'arm64-'));
     try {
-        debug_1.d(`extracting ${x64AsarPath} to ${x64Dir}`);
+        (0, debug_1.d)(`extracting ${x64AsarPath} to ${x64Dir}`);
         asar.extractAll(x64AsarPath, x64Dir);
-        debug_1.d(`extracting ${arm64AsarPath} to ${arm64Dir}`);
+        (0, debug_1.d)(`extracting ${arm64AsarPath} to ${arm64Dir}`);
         asar.extractAll(arm64AsarPath, arm64Dir);
         for (const file of arm64Unique) {
             const source = path.resolve(arm64Dir, file);
             const destination = path.resolve(x64Dir, file);
             if (isDirectory(arm64AsarPath, file)) {
-                debug_1.d(`creating unique directory: ${file}`);
+                (0, debug_1.d)(`creating unique directory: ${file}`);
                 await fs.mkdirp(destination);
                 continue;
             }
-            debug_1.d(`xopying unique file: ${file}`);
+            (0, debug_1.d)(`xopying unique file: ${file}`);
             await fs.mkdirp(path.dirname(destination));
             await fs.copy(source, destination);
         }
         for (const binding of commonBindings) {
             const source = await fs.realpath(path.resolve(arm64Dir, binding));
             const destination = await fs.realpath(path.resolve(x64Dir, binding));
-            debug_1.d(`merging binding: ${binding}`);
-            child_process_1.execFileSync(LIPO, [source, destination, '-create', '-output', destination]);
+            (0, debug_1.d)(`merging binding: ${binding}`);
+            (0, child_process_1.execFileSync)(LIPO, [source, destination, '-create', '-output', destination]);
         }
-        debug_1.d(`creating archive at ${outputAsarPath}`);
+        (0, debug_1.d)(`creating archive at ${outputAsarPath}`);
         const resolvedUnpack = Array.from(unpackedFiles).map((file) => path.join(x64Dir, file));
         let unpack;
         if (resolvedUnpack.length > 1) {
@@ -162,10 +164,11 @@ exports.mergeASARs = async ({ x64AsarPath, arm64AsarPath, outputAsarPath, single
         await asar.createPackageWithOptions(x64Dir, outputAsarPath, {
             unpack,
         });
-        debug_1.d('done merging');
+        (0, debug_1.d)('done merging');
     }
     finally {
         await Promise.all([fs.remove(x64Dir), fs.remove(arm64Dir)]);
     }
 };
+exports.mergeASARs = mergeASARs;
 //# sourceMappingURL=asar-utils.js.map

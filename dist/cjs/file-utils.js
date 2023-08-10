@@ -17,7 +17,7 @@ var AppFileType;
  *
  * @param appPath Path to the application
  */
-exports.getAllAppFiles = async (appPath) => {
+const getAllAppFiles = async (appPath) => {
     const files = [];
     const visited = new Set();
     const traverse = async (p) => {
@@ -32,7 +32,7 @@ exports.getAllAppFiles = async (appPath) => {
             let fileType = AppFileType.PLAIN;
             var fileOutput = '';
             try {
-                fileOutput = await cross_spawn_promise_1.spawn('file', ['--brief', '--no-pad', p]);
+                fileOutput = await (0, cross_spawn_promise_1.spawn)('file', ['--brief', '--no-pad', p]);
             }
             catch (e) {
                 if (e instanceof cross_spawn_promise_1.ExitCodeError) {
@@ -68,4 +68,5 @@ exports.getAllAppFiles = async (appPath) => {
     await traverse(appPath);
     return files;
 };
+exports.getAllAppFiles = getAllAppFiles;
 //# sourceMappingURL=file-utils.js.map

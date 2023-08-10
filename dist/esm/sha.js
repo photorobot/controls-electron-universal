@@ -8,7 +8,7 @@ export const sha = async (filePath) => {
     const fileStream = fs.createReadStream(filePath);
     fileStream.pipe(hash);
     await new Promise((resolve, reject) => {
-        fileStream.on('end', () => resolve());
+        fileStream.on('end', resolve);
         fileStream.on('error', (err) => reject(err));
     });
     return hash.read();
