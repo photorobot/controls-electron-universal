@@ -1,9 +1,32 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getAllAppFiles = exports.AppFileType = void 0;
 const cross_spawn_promise_1 = require("@malept/cross-spawn-promise");
-const fs = require("fs-extra");
-const path = require("path");
+const fs = __importStar(require("fs-extra"));
+const path = __importStar(require("path"));
 const MACHO_PREFIX = 'Mach-O ';
 var AppFileType;
 (function (AppFileType) {
@@ -12,7 +35,7 @@ var AppFileType;
     AppFileType[AppFileType["INFO_PLIST"] = 2] = "INFO_PLIST";
     AppFileType[AppFileType["SNAPSHOT"] = 3] = "SNAPSHOT";
     AppFileType[AppFileType["APP_CODE"] = 4] = "APP_CODE";
-})(AppFileType = exports.AppFileType || (exports.AppFileType = {}));
+})(AppFileType || (exports.AppFileType = AppFileType = {}));
 /**
  *
  * @param appPath Path to the application

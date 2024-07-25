@@ -1,4 +1,27 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
 var __rest = (this && this.__rest) || function (s, e) {
     var t = {};
     for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0)
@@ -13,13 +36,13 @@ var __rest = (this && this.__rest) || function (s, e) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.makeUniversalApp = void 0;
 const cross_spawn_promise_1 = require("@malept/cross-spawn-promise");
-const asar = require("@electron/asar");
-const fs = require("fs-extra");
-const minimatch = require("minimatch");
-const os = require("os");
-const path = require("path");
-const plist = require("plist");
-const dircompare = require("dir-compare");
+const asar = __importStar(require("@electron/asar"));
+const fs = __importStar(require("fs-extra"));
+const minimatch_1 = require("minimatch");
+const os = __importStar(require("os"));
+const path = __importStar(require("path"));
+const plist = __importStar(require("plist"));
+const dircompare = __importStar(require("dir-compare"));
 const file_utils_1 = require("./file-utils");
 const asar_utils_1 = require("./asar-utils");
 const sha_1 = require("./sha");
@@ -102,13 +125,16 @@ const makeUniversalApp = async (opts) => {
             if (!firstExists || !secondExists) {
                 continue;
             }
+        }
+        const knownMergedMachOFiles = new Set();
+        for (const machOFile of x64Files.filter((f) => f.type === file_utils_1.AppFileType.MACHO)) {
             const first = await fs.realpath(path.resolve(tmpApp, machOFile.relativePath));
             const second = await fs.realpath(path.resolve(opts.arm64AppPath, machOFile.relativePath));
             const x64Sha = await (0, sha_1.sha)(path.resolve(opts.x64AppPath, machOFile.relativePath));
             const arm64Sha = await (0, sha_1.sha)(path.resolve(opts.arm64AppPath, machOFile.relativePath));
             if (x64Sha === arm64Sha) {
                 if (opts.x64ArchFiles === undefined ||
-                    !minimatch(machOFile.relativePath, opts.x64ArchFiles, { matchBase: true })) {
+                    !(0, minimatch_1.minimatch)(machOFile.relativePath, opts.x64ArchFiles, { matchBase: true })) {
                     throw new Error(`Detected file "${machOFile.relativePath}" that's the same in both x64 and arm64 builds and not covered by the ` +
                         `x64ArchFiles rule: "${opts.x64ArchFiles}"`);
                 }
@@ -126,6 +152,7 @@ const makeUniversalApp = async (opts) => {
                 '-output',
                 await fs.realpath(path.resolve(tmpApp, machOFile.relativePath)),
             ]);
+            knownMergedMachOFiles.add(machOFile.relativePath);
         }
         /**
          * If we don't have an ASAR we need to check if the two "app" folders are identical, if
@@ -136,7 +163,12 @@ const makeUniversalApp = async (opts) => {
         if (x64AsarMode === asar_utils_1.AsarMode.NO_ASAR) {
             (0, debug_1.d)('checking if the x64 and arm64 app folders are identical');
             const comparison = await dircompare.compare(path.resolve(tmpApp, 'Contents', 'Resources', 'app'), path.resolve(opts.arm64AppPath, 'Contents', 'Resources', 'app'), { compareSize: true, compareContent: true });
-            if (!comparison.same) {
+            const differences = comparison.diffSet.filter((difference) => difference.state !== 'equal');
+            (0, debug_1.d)(`Found ${differences.length} difference(s) between the x64 and arm64 folders`);
+            const nonMergedDifferences = differences.filter((difference) => !difference.name1 ||
+                !knownMergedMachOFiles.has(path.join('Contents', 'Resources', 'app', difference.relativePath, difference.name1)));
+            (0, debug_1.d)(`After discluding MachO files merged with lipo ${nonMergedDifferences.length} remain.`);
+            if (nonMergedDifferences.length > 0) {
                 (0, debug_1.d)('x64 and arm64 app folders are different, creating dynamic entry ASAR');
                 await fs.move(path.resolve(tmpApp, 'Contents', 'Resources', 'app'), path.resolve(tmpApp, 'Contents', 'Resources', 'app-x64'));
                 await fs.copy(path.resolve(opts.arm64AppPath, 'Contents', 'Resources', 'app'), path.resolve(tmpApp, 'Contents', 'Resources', 'app-arm64'));
@@ -225,7 +257,7 @@ const makeUniversalApp = async (opts) => {
                 throw new Error(`Expected all Info.plist files to be identical when ignoring integrity when creating a universal build but "${plistFile.relativePath}" was not`);
             }
             const injectAsarIntegrity = !opts.infoPlistsToIgnore ||
-                minimatch(plistFile.relativePath, opts.infoPlistsToIgnore, { matchBase: true });
+                (0, minimatch_1.minimatch)(plistFile.relativePath, opts.infoPlistsToIgnore, { matchBase: true });
             const mergedPlist = injectAsarIntegrity
                 ? Object.assign(Object.assign({}, x64Plist), { ElectronAsarIntegrity: generatedIntegrity }) : Object.assign({}, x64Plist);
             await fs.writeFile(path.resolve(tmpApp, plistFile.relativePath), plist.build(mergedPlist));
