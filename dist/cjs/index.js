@@ -62,12 +62,24 @@ const makeUniversalApp = async (opts) => {
         const x64Files = await (0, file_utils_1.getAllAppFiles)(await fs.realpath(tmpApp));
         const arm64Files = await (0, file_utils_1.getAllAppFiles)(await fs.realpath(opts.arm64AppPath));
         for (const file of dupedFiles(x64Files)) {
-            if (!arm64Files.some((f) => f.relativePath === file.relativePath))
+            if (!arm64Files.some((f) => f.relativePath === file.relativePath)) {
+                // Check if the file is part of the SDK files that exist only in ARM64
+                if (file.relativePath.includes('EDSDK') || file.relativePath.includes('CHHLLite')) {
+                    // Skip adding to uniqueToX64, as these files are expected to be missing
+                    continue;
+                }
                 uniqueToX64.push(file.relativePath);
+            }
         }
         for (const file of dupedFiles(arm64Files)) {
-            if (!x64Files.some((f) => f.relativePath === file.relativePath))
+            if (!x64Files.some((f) => f.relativePath === file.relativePath)) {
+                // Similarly handle files unique to ARM64
+                if (file.relativePath.includes('EDSDK') || file.relativePath.includes('CHHLLite')) {
+                    // These files are expected in ARM64 but not in x64
+                    continue;
+                }
                 uniqueToArm64.push(file.relativePath);
+            }
         }
         // For CamConnect.app there are some extra files for Nikon that are available only on x86
         // if (uniqueToX64.length !== 0 || uniqueToArm64.length !== 0) {
